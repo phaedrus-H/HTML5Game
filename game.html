@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset = "UTF-8"/>
+    <title>Car Game</title>    
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body onload="startGame()">
+    <script>
+        var myGamePiece;
+        var myObstacles = [];
+        var myGrab = [];
+        var myBackground;
+        var rotate1;
+        var rotate2;
+        var rotate3;
+        var myScore;
+        var lifeText;
+        var gameOver;
+        var finalScore;
+        var life = 3;
+        var score = 0;
+        var grabs = 0;
+
+        function startGame() {
+            myGamePiece = new component(80, 50, "car.png", 10, 120, "image", 0);
+            myBackground = new component(480, 270, "freeway.jpg", 0, 0, "image", 0);
+            myScore = new component("20px", "Consolas", "white", 350, 40, "text", 0);
+            lifeText = new component("20px", "Consolas", "white", 20, 40, "text", 0);
+            gameOver = new component("30px", "Consolas", "white", 150, 115, "text", 0);
+            rotate1 = new component(20, 20, "red", 160, 135, "rect",0);
+            rotate2 = new component(20, 20, "green", 225, 135, "rect",0);
+            rotate3 = new component(20, 20, "blue", 290, 135, "rect",0);
+            finalScore = new component("25px", "Consolas", "white", 150, 175, "text", 0);
+            myGameArea.start();
+        }
+
+        var myGameArea = {
+            canvas: document.createElement("canvas"),
+            start: function() {
+                this.canvas.width = 480;
+                this.canvas.height = 270;
+                this.context = this.canvas.getContext("2d");
+                document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                this.frameNo = 0;
+                this.interval = setInterval(updateGameArea, 20);
+
+                window.addEventListener('keydown', function(e) {
+                    myGameArea.key = e.keyCode;
+                })
+                window.addEventListener('keyup', function(e) {
+                    myGameArea.key = false;
+                })
+            },
+            clear: function() {
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            },
+            stop: function() {
+                clearInterval(this.interval);
+            }
+        }
+
+        function component(width, height, color, x, y,type,angle) {
+    
+    this.type = type;
+    
+    if (type == "image") {
+    this.image = new Image();
+    this.image.src = color;
+  }
+    this.width = width;
+    this.height = height;
+    this.angle = angle;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+       var ctx = myGameArea.context;
+          
+       
+         if (type == "image") {
+             
+     
+      ctx.drawImage(this.image, 
+        this.x, 
+        this.y,
+        this.width, this.height);
+        
+   
+    } 
+    
+    else if (this.type == "text") {
+      ctx.font = this.width + " " + this.height;
+      ctx.fillStyle = color;
+      ctx.fillText(this.text, this.x, this.y);
+    }
+    else if(this.type=="rect"){
+       
+    ctx = myGameArea.context;
+        ctx.save();
+        ctx.translate(this.x, this.y);        
+        ctx.rotate(this.angle);
+        ctx.fillStyle = color;
+        ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);        
+        ctx.restore();      
+  
+    }
+    else if(this.type =="background")
+    {
+         ctx.fillStyle = color;
+       ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    
+           
+    }
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY; 
+        if (this.type == "background") {
+            if (this.x == -(this.width)) {
+                this.x = 0;
+            }
+        }
+    }    
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft +this.width/4) || (myleft > otherright +this.width/4)) {
+            crash = false;
+            
+        }
+        
+        return crash;
+    }
+}
+
+        function updateGameArea() {
+
+            gameOver.text = "";
+            finalScore.text = "";
+            myScore.text = "Score : " + score;
+
+            var x, height, gap, minHeight, maxHeight, minGap, maxGap, crashed = false;
+            var keyboard = true;
+            for (i = 0; i < myObstacles.length; i += 1) {
+                if (myGamePiece.crashWith(myObstacles[i])) {
+                    myObstacles = [];
+                    myGrab = [];
+                    life--;
+                    grabs = 0;
+                    keyboard = false;
+                    crashed = true;
+                    setTimeout(function() {
+                        myGamePiece.x = 10;
+                        myGamePiece.y = 120;
+                        keyboard = true;
+                        if (life == 3) {
+                            myGamePiece.image.src = "car.png";
+                        }
+                        else if (life == 2) {
+                            myGamePiece.image.src = "car-pink.png";
+                        }
+                        else if (life == 1) {
+                            myGamePiece.image.src = "car-turquois.png";
+                        }
+                    }, 1000);
+
+                }
+
+
+            }
+            myGameArea.clear();
+
+
+            for (i = 0; i < myGrab.length; i += 1) {
+                if (myGamePiece.crashWith(myGrab[i])) {
+                    myGrab.splice(i, 1);
+                    score += 10;
+                    grabs++;
+                }
+            }
+
+            if (grabs == 5) {
+                if (life == 1) {
+                    grabs = 0;
+                    life++;
+                }
+            }
+
+            if (grabs == 10) {
+                if (life == 2) {
+                    grabs = 0;
+                    life++;
+                }
+            }
+
+            if (life == 3) {
+                myGamePiece.image.src = "car.png";
+            }
+            if (life == 2) {
+                myGamePiece.image.src = "car-pink.png";
+            }
+
+
+
+            if (life == 0) {
+               // myGameArea.clear();
+                myGamePiece.image.src = "";
+                myGrab = [];
+                myObstacles = [];
+                lifeText = "";
+                myScore = "";
+
+                myBackground = new component(480, 270, "black", 0, 0, "background", 0);
+                
+                gameOver.text="Game Over";
+                finalScore.text = "Score : " + score;
+          
+         
+                rotate1.angle += 1 * Math.PI / 180;   
+                rotate2.angle += 1 * Math.PI / 180;  
+                rotate3.angle += 1 * Math.PI / 180;  
+            
+                myBackground.update();
+                rotate1.update();
+                rotate2.update();
+                rotate3.update();
+
+            }
+            lifeText.text = "Life : " + life;
+
+            if (life != 0) {
+                myBackground.newPos();
+                myBackground.update();
+            }
+            gameOver.update();
+            finalScore.update();
+            lifeText.update();
+            myScore.update();
+
+            myGameArea.frameNo += 1;
+            if (myGameArea.frameNo == 1 || everyinterval(100)) {
+                x = myGameArea.canvas.width;
+                minHeight = 20;
+                maxHeight = 200;
+                height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight) - 100;
+                minGap = 50;
+                maxGap = 200;
+                gap = Math.floor(Math.random() * (maxGap - minGap + 1) + minGap);
+                if (height % 2 == 0) {
+                    myObstacles.push(new component(80, 50, "police.png", x, 0, "image", 0));
+                    myGrab.push(new component(40, 50, "fuel.png", x, height, "image", 0));
+                }
+                else
+                    myObstacles.push(new component(80, 50, "police.png", x, height + gap, "image", 0));
+            }
+            for (var i = 0; i < myObstacles.length; i += 1) {
+                myObstacles[i].x += -1 - Math.floor((Math.random() * 1) + 1);
+                myObstacles[i].update();
+
+            }
+
+            for (i = 0; i < myGrab.length; i += 1) {
+                myGrab[i].angle += 1 * Math.PI / 180;
+                myGrab[i].x += -1;
+
+                myGrab[i].update();
+            }
+            myGamePiece.speedX = 0;
+            myGamePiece.speedY = 0;
+            if (myGameArea.key && myGameArea.key == 37 && keyboard) {
+                myGamePiece.speedX = -1;
+            }
+            if (myGameArea.key && myGameArea.key == 39 && keyboard) {
+                myGamePiece.speedX = 1;
+            }
+            if (myGameArea.key && myGameArea.key == 38 && keyboard) {
+                myGamePiece.speedY = -1;
+            }
+            if (myGameArea.key && myGameArea.key == 40 && keyboard) {
+                myGamePiece.speedY = 1;
+            }
+            myGamePiece.newPos();
+            myGamePiece.update();
+
+
+
+        }
+
+        function everyinterval(n) {
+            if ((myGameArea.frameNo / n) % 1 == 0) {
+                return true;
+            }
+            return false;
+        }
+    </script>
+    <h3>How to play</h3>
+    <ul>
+        <li>
+            Use arrow keys to move left, right, up and down.
+        </li>
+
+        <li>
+            Avoid Police Cars.
+        </li>
+        <li>
+            Collect Fuel Tanks to increase score and regain lost lifes.
+        </li>
+        <li>
+            3 lifes - Red Car.
+        </li>
+        <li>
+            2 lifes - Pink Car. (Collect 10 fuel tanks to increase a life.)
+        </li>
+        <li>
+            1 life - Turqouis Car. (Collect 5 fuel tanks to increase a life.)
+        </li>
+    </ul>
+</body>
+
+</html>
